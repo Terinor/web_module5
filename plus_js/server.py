@@ -47,20 +47,28 @@ class Server:
     async def distribute(self, ws: WebSocketServerProtocol):
         async for message in ws:
             if message.startswith("exchange"):
-                try:
-                    _, days, currency = message.split()
-                    days = int(days)
-                    response = await exchange.main(days, currency.upper())
-                except ValueError:
-                    response = "Некоректний формат команди exchange."
-                await ws.send(f'server: {response}')
-                await Server.log_command("exchange", response)
+
+                _, days, currency = message.split()
+                asyncio.create_task(self.process_exchange(ws, days, currency.upper()))
+
             else:
                 await self.send_to_clients(f"{ws.name}: {message}")
+
+    @staticmethod
+    async def process_exchange (ws, days, currency):
+        try:
+            days = int(days)
+            response = await exchange.main(days, currency.upper())
+        except ValueError:
+            response = "Некоректний формат команди exchange."
+
+        await ws.send(f'server: {response}')
+        await Server.log_command("exchange", response)
 
 
 async def main():
     server = Server()
+    asyncio.create_task(exchange.monitoring())
     async with websockets.serve(server.ws_handler, 'localhost', 8765):
         await asyncio.Future()  # run forever
 

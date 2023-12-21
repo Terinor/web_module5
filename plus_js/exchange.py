@@ -2,6 +2,7 @@ import aiohttp
 import asyncio
 from datetime import datetime, timedelta
 import sys
+from time import time
 
 
 VALID_CURRENCIES = [
@@ -30,6 +31,11 @@ VALID_CURRENCIES = [
 ]
 
 
+async def monitoring():
+    while True:
+        await asyncio.sleep(1)
+        print(f'Monitoring {time()}')
+
 
 async def fetch_exchange_rate(date, currency):
     url = f"https://api.privatbank.ua/p24api/exchange_rates?json&date={date.strftime('%d.%m.%Y')}"
@@ -46,10 +52,12 @@ async def fetch_exchange_rate(date, currency):
             print(f"Error fetching data: {e}")
 
 
+
 async def main(days, currency):
     current_date = datetime.now()
     tasks = []
     response = []
+    # asyncio.create_task(monitoring())
 
     for day in range(days):
         date = current_date - timedelta(days=day)
@@ -70,7 +78,7 @@ if __name__ == "__main__":
         currency = sys.argv[2].upper()
         if currency not in VALID_CURRENCIES:
             raise ValueError(f"Currency should be one of {', '.join(VALID_CURRENCIES)}")
-        asyncio.run(main(days, currency))
+        print(asyncio.run(main(days, currency)))
     except Exception as e:
         print(f"Error: {e}")
 
